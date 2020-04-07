@@ -213,10 +213,12 @@ add_executable(my_ur5_controller src/my_ur5_controller.cpp)
 target_link_libraries(my_ur5_controller ${catkin_LIBRARIES})
 add_dependencies(my_ur5_controller my_ur5_controller_generate_messages_cpp)
 
+add_executable(ikSolverTestUR5 src/ikSolverTestUR5.cpp)
+target_link_libraries(ikSolverTestUR5 ${catkin_LIBRARIES})
+add_dependencies(ikSolverTestUR5 my_ur5_controller_generate_messages_cpp)
 
-add_executable(my_test_controller src/my_test_controller.cpp)
-target_link_libraries(my_test_controller ${catkin_LIBRARIES})
-add_dependencies(my_test_controller my_ur5_controller_generate_messages_cpp)
-
+add_executable(command_publisher src/command_publisher.cpp)
+target_link_libraries(command_publisher ${catkin_LIBRARIES})
+add_dependencies(command_publisher my_ur5_controller_generate_messages_cpp)
 
 
