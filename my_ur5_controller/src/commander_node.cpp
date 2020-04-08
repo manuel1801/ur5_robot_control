@@ -10,10 +10,10 @@ ros::Subscriber joySub;
 void joyCallback(const sensor_msgs::Joy::ConstPtr &joy)
 {
     geometry_msgs::Twist twist;
-    float scale = 0.1;
-    twist.linear.x = scale * joy->axes[0];
-    twist.linear.y = scale * joy->axes[1];
-    twist.linear.z = scale * joy->axes[4];
+
+    twist.linear.x = joy->axes[0]; // Left Joystic:  left: +x right: -x
+    twist.linear.y = joy->axes[1]; // Left Joystic:  up  : +y down : -y
+    twist.linear.z = joy->axes[4]; // Right Joystic: up  : +z down : -z
     joyPub.publish(twist);
 }
 
