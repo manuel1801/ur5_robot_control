@@ -222,3 +222,8 @@ target_link_libraries(command_publisher ${catkin_LIBRARIES})
 add_dependencies(command_publisher my_ur5_controller_generate_messages_cpp)
 
 
+add_executable(sine_wave_motion src/sine_wave_motion.cpp)
+target_link_libraries(sine_wave_motion ${catkin_LIBRARIES})
+add_dependencies(sine_wave_motion my_ur5_controller_generate_messages_cpp)
+
+
