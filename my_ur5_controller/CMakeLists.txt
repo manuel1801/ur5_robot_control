@@ -217,9 +217,9 @@ add_executable(ikSolverTestUR5 src/ikSolverTestUR5.cpp)
 target_link_libraries(ikSolverTestUR5 ${catkin_LIBRARIES})
 add_dependencies(ikSolverTestUR5 my_ur5_controller_generate_messages_cpp)
 
-add_executable(command_publisher src/command_publisher.cpp)
-target_link_libraries(command_publisher ${catkin_LIBRARIES})
-add_dependencies(command_publisher my_ur5_controller_generate_messages_cpp)
+add_executable(commander_node src/commander_node.cpp)
+target_link_libraries(commander_node ${catkin_LIBRARIES})
+add_dependencies(commander_node my_ur5_controller_generate_messages_cpp)
 
 
 add_executable(sine_wave_motion src/sine_wave_motion.cpp)

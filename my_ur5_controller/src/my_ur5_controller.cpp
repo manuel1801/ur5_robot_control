@@ -72,7 +72,7 @@ int main(int argc, char **argv)
     KDL::Frame posFrame;
     float offset = -(M_PI / 2);
 
-    ros::Subscriber subCommand = node.subscribe("/command", 1000, commandCallback);
+    ros::Subscriber subCommand = node.subscribe("command", 1000, commandCallback);
     ros::Subscriber subState = node.subscribe("/joint_states", 1000, stateCallback);
 
     std::vector<ros::Publisher> positionPublishers;
