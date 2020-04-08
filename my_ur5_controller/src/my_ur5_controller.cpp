@@ -20,7 +20,16 @@ float force = 0.0;
 float currentPos[6];
 float initialJointPositions[] = {
     0.0, -0.91, 0.32, 0.14, 0.03, 0.0};
-float increment = -0.1;
+float jointLimits[] = {
+    2 * M_PI,
+    2 * M_PI,
+    M_PI,
+    2 * M_PI,
+    2 * M_PI,
+    2 * M_PI,
+};
+
+float increment = -0.005;
 
 KDL::JntArray jointPositions(N_JOINTS);
 
@@ -37,24 +46,23 @@ std::string positionTopicNames[] = {
 
 void commandCallback(const std_msgs::Float64::ConstPtr &msg)
 {
-    //ROS_INFO("received x: %.2f,  y: %.2f, z: %.2f", msg.linear.x, msg.linear.y, msg.linear.z);
     force = msg->data;
-    //hier const x (kraft) auf aktuelle joint state (cartesian) aufaddieren
 }
+
+//from Callback joint states
+//[elbow_joint, shoulder_lift_joint, shoulder_pan_joint, wrist_1_joint, wrist_2_joint,wrist_3_joint]
+
+//in urdf:
+// [shoulder_pan_joint , shoulder_lift_joint, elbow_joint , wrist_1_joint, wrist_2_joint,wrist_3_joint]
+int mapIndex[] = {2, 1, 0, 4, 5, 6};
 
 void stateCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
-    // ROS_INFO("Received: ", msg->position[0]);
-    //std::cout << "posJ1: " << msg->position[0] << "  posJ2: " << msg->position[1] << std::endl;
-    //for (int i = 0; i < N_JOINTS; i++)
-    //{
-    //    q_init(i) = msg->position[i];
-    //}
-    //jointPositions
-
-    // std::vector<std::string> names = msg->name;
-    // std::vector<double> positions = msg->position;
-    // q = parseJointStates(names, positions);
+    for (int i = 0; i < N_JOINTS; i++)
+    {
+        jointPositions(i) = msg->position[mapIndex[i]];
+        //std::cout << msg->name[i] << std::endl;
+    }
 }
 
 int main(int argc, char **argv)
@@ -65,7 +73,7 @@ int main(int argc, char **argv)
     KDL::Chain chain;
 
     ros::Subscriber subCommand = node.subscribe("command", 1000, commandCallback);
-    ros::Subscriber subState = node.subscribe("/joint_state_controller", 1000, stateCallback);
+    ros::Subscriber subState = node.subscribe("/joint_states", 1000, stateCallback);
 
     std::vector<ros::Publisher> positionPublishers;
     ros::Publisher positionPublisher;
@@ -87,47 +95,17 @@ int main(int argc, char **argv)
     KDL::JntArray q_min(N_JOINTS);
     KDL::JntArray q_max(N_JOINTS);
     std_msgs::Float64 jointPos;
-    ros::Rate rate(0.5);
-    rate.sleep();
+    //ros::Rate rate(0.5);
+    ros::Rate rate(30);
 
     for (int i = 0; i < N_JOINTS; i++)
     {
         jointPos.data = initialJointPositions[i];
         positionPublishers[i].publish(jointPos);
-        jointPositions(i) = initialJointPositions[i]; //nur in callback
-        q_min(i) = -6.28;
-        q_max(i) = 6.28;
+        q_min(i) = -jointLimits[i];
+        q_max(i) = jointLimits[i];
     }
-
-    // // Do Forward Kinematic
-    // KDL::ChainFkSolverPos_recursive fkSolverPos(chain);
-    // KDL::Frame posFrame;
-    // fkSolverPos.JntToCart(jointPositions, posFrame);
-    // ROS_INFO("Forward Kinematic Result x: %f z: %f z: %f",
-    //          posFrame.p(0), posFrame.p(1), posFrame.p(2));
-
-    // //increment in cartesian z direction
-    // posFrame.p(2) += increment;
-
-    // ROS_INFO("Position after increment x: %f z: %f z: %f",
-    //          posFrame.p(0), posFrame.p(1), posFrame.p(2));
-
-    // //Do Inverse Kinematic
-    // KDL::ChainIkSolverVel_pinv ikSolverVel(chain);
-    // KDL::ChainIkSolverPos_NR_JL ikSolverPos(chain, q_min, q_max, fkSolverPos, ikSolverVel, 100, 1e-6);
-
-    // KDL::JntArray q_dest(N_JOINTS);
-    // ikSolverPos.CartToJnt(jointPositions, posFrame, q_dest);
-
-    // std::cout << "New Joint Values:" << std::endl;
-    // for (int i = 0; i < N_JOINTS; i++)
-    // {
-    //     std::cout << q_dest(i) << std::endl;
-    // }
-
-    //return 0;
-
-    int n = 0;
+    rate.sleep();
 
     while (ros::ok)
     {
@@ -136,16 +114,20 @@ int main(int argc, char **argv)
         KDL::ChainFkSolverPos_recursive fkSolverPos(chain);
         KDL::Frame posFrame;
         fkSolverPos.JntToCart(jointPositions, posFrame);
-        ROS_INFO("Forward Kinematic Result x: %f z: %f z: %f",
-                 posFrame.p(0), posFrame.p(1), posFrame.p(2));
 
-        //increment in cartesian z direction
-        posFrame.p(2) += increment;
-        //hier frame from command topic callback
-        //     jointPos from stateCB
+        //increment in cartesian x direction
 
-        ROS_INFO("Position after increment x: %f y: %f z: %f",
-                 posFrame.p(0), posFrame.p(1), posFrame.p(2));
+        if (posFrame.p(0) > 0.6)
+        {
+            increment = -0.005;
+        }
+        else if (posFrame.p(0) < 0.3)
+        {
+            increment = 0.005;
+        }
+        posFrame.p(0) += increment;
+
+        ROS_INFO("X: %f, Y: %f, Z: %f", posFrame.p(0), posFrame.p(1), posFrame.p(2));
 
         //Do Inverse Kinematic
         KDL::ChainIkSolverVel_pinv ikSolverVel(chain);
@@ -154,22 +136,17 @@ int main(int argc, char **argv)
         KDL::JntArray q_dest(N_JOINTS);
         ikSolverPos.CartToJnt(jointPositions, posFrame, q_dest);
 
-        std::cout << "New Joint Values:" << std::endl;
+        //std::cout << "New Joint Values:" << std::endl;
         for (int i = 0; i < N_JOINTS; i++)
         {
-            std::cout << q_dest(i) << std::endl;
+            //std::cout << q_dest(i) << std::endl;
             jointPos.data = q_dest(i);
             //jointPos.data = (float)q_dest(i);
             positionPublishers[i].publish(jointPos);
         }
 
-        if (n % 10 == 0)
-        {
-            increment *= -1.0;
-        }
         ros::spinOnce();
         rate.sleep();
-        n++;
     }
     return 0;
 }
