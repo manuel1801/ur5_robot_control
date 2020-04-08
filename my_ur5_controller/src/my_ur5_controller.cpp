@@ -2,6 +2,7 @@
 #include "std_msgs/Float64.h"
 #include "geometry_msgs/Twist.h"
 #include "sensor_msgs/JointState.h"
+
 #include <iostream>
 #include <string>
 
@@ -139,14 +140,26 @@ int main(int argc, char **argv)
             //Do Inverse Kinematic
             KDL::ChainIkSolverVel_pinv ikSolverVel(chain);
             KDL::ChainIkSolverPos_NR_JL ikSolverPos(chain, q_min, q_max, fkSolverPos, ikSolverVel, 100, 1e-6);
-            ikSolverPos.CartToJnt(jointPosCurrent, posFrame, jointPosDest);
 
-            // Publish new Joint Values
-            for (int i = 0; i < N_JOINTS; i++)
+            if (ikSolverPos.CartToJnt(jointPosCurrent, posFrame, jointPosDest) == 0)
             {
-                jointPosMsg.data = jointPosDest(i);
-                positionPublishers[i].publish(jointPosMsg);
+                // Publish new Joint Values
+                for (int i = 0; i < N_JOINTS; i++)
+                {
+                    jointPosMsg.data = jointPosDest(i);
+                    positionPublishers[i].publish(jointPosMsg);
+                }
             }
+            else
+            {
+                // Publish old Joint Values
+                for (int i = 0; i < N_JOINTS; i++)
+                {
+                    jointPosMsg.data = jointPosCurrent(i);
+                    positionPublishers[i].publish(jointPosMsg);
+                }
+            }
+
         }
 
         ros::spinOnce();

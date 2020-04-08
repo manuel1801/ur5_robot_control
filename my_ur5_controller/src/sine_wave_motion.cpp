@@ -49,13 +49,12 @@ int main(int argc, char **argv)
                 {
                     jointPos.data = 0;
                 }
-                //continue;
                 positionPublishers[i].publish(jointPos);
             }
         }
         else
         {
-            //Sine Wave Pose
+            //Sine Wave Motion
             for (int i = 0; i < N_JOINTS; i++)
             {
                 if (i == 1)

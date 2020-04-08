@@ -1,0 +1,4 @@
+<launch>
+        <node pkg="my_ur5_controller" type="sine_wave_motion" name="sine_wave_motion" />
+        <include file="$(find ur_gazebo)/launch/ur5.launch" />
+</launch>
