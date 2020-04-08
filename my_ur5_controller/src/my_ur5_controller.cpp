@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "std_msgs/Float64.h"
+#include "geometry_msgs/Twist.h"
 #include "sensor_msgs/JointState.h"
 #include <iostream>
 #include <kdl/chain.hpp>
@@ -16,22 +17,16 @@
 
 #define N_JOINTS 6
 
-float force = 0.0;
-float currentPos[6];
-float initialJointPositions[] = {
-    0.0, -0.91, 0.32, 0.14, 0.03, 0.0};
-float jointLimits[] = {
-    2 * M_PI,
-    2 * M_PI,
-    M_PI,
-    2 * M_PI,
-    2 * M_PI,
-    2 * M_PI,
-};
+float force[] = {0.0, 0.0, 0.0};
+// float initialJointPositions[] = {
+//     0.0, -0.91, 0.32, 0.14, 0.03, 0.0};
 
-float increment = -0.005;
+// float initialCartPositions[] = {
+//     0.01, 0.19, 0.91};
 
-KDL::JntArray jointPositions(N_JOINTS);
+float increment = -0.01;
+
+KDL::JntArray jointPosCurrent(N_JOINTS);
 
 std::string urdfFile = "/home/manuel/ros/hrtask_ws/src/ur5_robot_control/ur_description/urdf/ur5.urdf";
 
@@ -44,9 +39,11 @@ std::string positionTopicNames[] = {
     "/wrist_3_joint_controller/command",
 };
 
-void commandCallback(const std_msgs::Float64::ConstPtr &msg)
+void commandCallback(const geometry_msgs::Twist &msg)
 {
-    force = msg->data;
+    force[0] = msg.linear.x;
+    force[1] = msg.linear.y;
+    force[2] = msg.linear.z;
 }
 
 //from Callback joint states
@@ -60,7 +57,7 @@ void stateCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
     for (int i = 0; i < N_JOINTS; i++)
     {
-        jointPositions(i) = msg->position[mapIndex[i]];
+        jointPosCurrent(i) = msg->position[mapIndex[i]];
         //std::cout << msg->name[i] << std::endl;
     }
 }
@@ -71,17 +68,15 @@ int main(int argc, char **argv)
     ros::NodeHandle node;
     KDL::Tree tree;
     KDL::Chain chain;
+    KDL::JntArray jointPosDest(N_JOINTS);
+    KDL::Frame posFrame;
+    float offset = -(M_PI / 2);
 
-    ros::Subscriber subCommand = node.subscribe("command", 1000, commandCallback);
+    ros::Subscriber subCommand = node.subscribe("/command", 1000, commandCallback);
     ros::Subscriber subState = node.subscribe("/joint_states", 1000, stateCallback);
 
     std::vector<ros::Publisher> positionPublishers;
     ros::Publisher positionPublisher;
-    for (int i = 0; i < N_JOINTS; i++)
-    {
-        positionPublisher = node.advertise<std_msgs::Float64>(positionTopicNames[i], 1);
-        positionPublishers.push_back(positionPublisher);
-    }
 
     // Get KDL Tree and Chain from urdf File
     if (!kdl_parser::treeFromFile(urdfFile, tree))
@@ -94,59 +89,86 @@ int main(int argc, char **argv)
     // Create initial Joint Array and publish to Controller
     KDL::JntArray q_min(N_JOINTS);
     KDL::JntArray q_max(N_JOINTS);
-    std_msgs::Float64 jointPos;
-    //ros::Rate rate(0.5);
-    ros::Rate rate(30);
+    std_msgs::Float64 jointPosMsg;
 
     for (int i = 0; i < N_JOINTS; i++)
     {
-        jointPos.data = initialJointPositions[i];
-        positionPublishers[i].publish(jointPos);
-        q_min(i) = -jointLimits[i];
-        q_max(i) = jointLimits[i];
+        positionPublisher = node.advertise<std_msgs::Float64>(positionTopicNames[i], 1);
+        positionPublishers.push_back(positionPublisher);
+
+        switch (i)
+        {
+        case 1:
+            jointPosDest(i) = offset;
+            q_min(i) = -(2 * M_PI);
+            q_max(i) = (2 * M_PI);
+            break;
+        case 2:
+            jointPosDest(i) = 0;
+            q_min(i) = -M_PI;
+            q_max(i) = M_PI;
+            break;
+        default:
+            jointPosDest(i) = 0;
+            q_min(i) = -(2 * M_PI);
+            q_max(i) = (2 * M_PI);
+            break;
+        }
     }
-    rate.sleep();
+
+    ros::Rate rate(20);
+
+    int n = 0;
 
     while (ros::ok)
     {
-
-        // Do Forward Kinematic
-        KDL::ChainFkSolverPos_recursive fkSolverPos(chain);
-        KDL::Frame posFrame;
-        fkSolverPos.JntToCart(jointPositions, posFrame);
-
-        //increment in cartesian x direction
-
-        if (posFrame.p(0) > 0.6)
+        if (n < 20)
         {
-            increment = -0.005;
+            for (int i = 0; i < N_JOINTS; i++)
+            {
+                jointPosMsg.data = jointPosDest(i);
+                positionPublishers[i].publish(jointPosMsg);
+            }
         }
-        else if (posFrame.p(0) < 0.3)
+        else
         {
-            increment = 0.005;
-        }
-        posFrame.p(0) += increment;
+            // Do Forward Kinematic
+            KDL::ChainFkSolverPos_recursive fkSolverPos(chain);
+            fkSolverPos.JntToCart(jointPosCurrent, posFrame);
 
-        ROS_INFO("X: %f, Y: %f, Z: %f", posFrame.p(0), posFrame.p(1), posFrame.p(2));
+            // posFrame.p(0) += force[0];
+            // posFrame.p(1) += force[1];
+            // posFrame.p(2) += force[2];
 
-        //Do Inverse Kinematic
-        KDL::ChainIkSolverVel_pinv ikSolverVel(chain);
-        KDL::ChainIkSolverPos_NR_JL ikSolverPos(chain, q_min, q_max, fkSolverPos, ikSolverVel, 100, 1e-6);
+            if (posFrame.p(2) < 0.4)
+            {
+                increment = 0.01;
+            }
+            else if (posFrame.p(2) > 0.7)
+            {
+                increment = -0.01;
+            }
+            posFrame.p(2) += increment;
 
-        KDL::JntArray q_dest(N_JOINTS);
-        ikSolverPos.CartToJnt(jointPositions, posFrame, q_dest);
+            //Do Inverse Kinematic
+            KDL::ChainIkSolverVel_pinv ikSolverVel(chain);
+            KDL::ChainIkSolverPos_NR_JL ikSolverPos(chain, q_min, q_max, fkSolverPos, ikSolverVel, 100, 1e-6);
 
-        //std::cout << "New Joint Values:" << std::endl;
-        for (int i = 0; i < N_JOINTS; i++)
-        {
-            //std::cout << q_dest(i) << std::endl;
-            jointPos.data = q_dest(i);
-            //jointPos.data = (float)q_dest(i);
-            positionPublishers[i].publish(jointPos);
+            ikSolverPos.CartToJnt(jointPosCurrent, posFrame, jointPosDest);
+
+            //std::cout << "New Joint Values:" << std::endl;
+            for (int i = 0; i < N_JOINTS; i++)
+            {
+                //std::cout << q_dest(i) << std::endl;
+                jointPosMsg.data = jointPosDest(i);
+                //jointPos.data = (float)q_dest(i);
+                positionPublishers[i].publish(jointPosMsg);
+            }
         }
 
         ros::spinOnce();
         rate.sleep();
+        n++;
     }
     return 0;
 }

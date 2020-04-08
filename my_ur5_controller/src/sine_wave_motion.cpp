@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 
     ros::Rate rate(20);
     float n = 0;
-    float j2Offset = -(M_PI / 2);
+    float offset = -(M_PI / 2);
 
     while (ros::ok)
     {
@@ -43,7 +43,7 @@ int main(int argc, char **argv)
                 if (i == 1)
                 {
 
-                    jointPos.data = j2Offset;
+                    jointPos.data = offset;
                 }
                 else
                 {
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
             {
                 if (i == 1)
                 {
-                    jointPos.data = sin(ros::Time::now().toSec()) + j2Offset;
+                    jointPos.data = sin(ros::Time::now().toSec()) + offset;
                 }
                 else
                 {
