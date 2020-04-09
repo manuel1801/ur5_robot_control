@@ -6,7 +6,7 @@ roslaunch my_ur5_controller sine_wave_motion.launch
 
 ### 2. Cartesian Position Controller
 ```
-roslaunch my_ur5_controller my_ur5_controller.launch
+roslaunch my_ur5_controller ur5_controller_trac_ik.launch
 ```
 
 *commander_node* uses Joystick

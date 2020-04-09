@@ -11,7 +11,7 @@
 
 float force[] = {0.0, 0.0, 0.0};
 float initJointPos[] = {0.0, -M_PI / 2, 0.0, 0.0, 0.0, 0.0};
-float rate = 1000;
+float rate = 2000;
 float scale = 0.004;
 
 KDL::JntArray jointPosCurrent(N_JOINTS);
@@ -100,7 +100,6 @@ int main(int argc, char **argv)
     }
 
     ros::Rate loop_rate(rate);
-    //ros::Rate rate(20);
     int n = 0;
 
     while (ros::ok)

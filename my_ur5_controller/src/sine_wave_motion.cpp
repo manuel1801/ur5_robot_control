@@ -42,7 +42,6 @@ int main(int argc, char **argv)
             {
                 if (i == 1)
                 {
-
                     jointPos.data = offset;
                 }
                 else

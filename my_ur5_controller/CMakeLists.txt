@@ -210,14 +210,6 @@ include_directories(
 # catkin_add_nosetests(test)
 
 
-add_executable(ur5_controller_kdl src/ur5_controller_kdl.cpp)
-target_link_libraries(ur5_controller_kdl ${catkin_LIBRARIES})
-add_dependencies(ur5_controller_kdl my_ur5_controller_generate_messages_cpp)
-
-add_executable(ikSolverTestUR5 src/ikSolverTestUR5.cpp)
-target_link_libraries(ikSolverTestUR5 ${catkin_LIBRARIES})
-add_dependencies(ikSolverTestUR5 my_ur5_controller_generate_messages_cpp)
-
 add_executable(commander_node src/commander_node.cpp)
 target_link_libraries(commander_node ${catkin_LIBRARIES})
 add_dependencies(commander_node my_ur5_controller_generate_messages_cpp)
@@ -225,10 +217,6 @@ add_dependencies(commander_node my_ur5_controller_generate_messages_cpp)
 add_executable(sine_wave_motion src/sine_wave_motion.cpp)
 target_link_libraries(sine_wave_motion ${catkin_LIBRARIES})
 add_dependencies(sine_wave_motion my_ur5_controller_generate_messages_cpp)
-
-add_executable(trac_ik_test src/trac_ik_test.cpp)
-target_link_libraries(trac_ik_test ${catkin_LIBRARIES})
-add_dependencies(trac_ik_test my_ur5_controller_generate_messages_cpp)
 
 add_executable(ur5_controller_trac_ik src/ur5_controller_trac_ik.cpp)
 target_link_libraries(ur5_controller_trac_ik ${catkin_LIBRARIES})
