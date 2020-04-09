@@ -52,3 +52,9 @@ CATKIN_IGNORE
 
 .vscode
 ikSolverTestUR5.cpp
+ur5_moveit_config
+ur_kinematics
+trac_ik_test.cpp
+ur5_controller_kdl.cpp
+my_ur5_controller.launch
+trac_ik_test.launch

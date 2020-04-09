@@ -2,10 +2,11 @@
 
         <param name="robot_description" command="$(find xacro)/xacro.py '$(find ur_description)/urdf/ur5_robot.urdf.xacro'" />
 
-        <node pkg="my_ur5_controller" type="my_ur5_controller" name="my_ur5_controller" />
+        <node pkg="my_ur5_controller" type="ur5_controller_trac_ik" name="ur5_controller_trac_ik" output="screen"/>
+        
         <node pkg="my_ur5_controller" type="commander_node" name="commander_node" />
 
-        <!-- joy node -->
+        
         <node respawn="true" pkg="joy"
                 type="joy_node" name="joy_node" >
                 <param name="dev" type="string" value="/dev/input/js1" />
