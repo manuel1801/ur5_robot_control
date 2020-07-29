@@ -37,7 +37,7 @@ void commandCallback(const geometry_msgs::Twist &msg)
 
 // from urdf:
 // [shoulder_pan_joint , shoulder_lift_joint, elbow_joint , wrist_1_joint, wrist_2_joint,wrist_3_joint]
-int mapIndex[] = {2, 1, 0, 4, 5, 6};
+int mapIndex[] = {2, 1, 0, 3, 4, 5};
 
 void stateCallback(const sensor_msgs::JointState::ConstPtr &msg)
 {
